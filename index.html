@@ -1,155 +1,64 @@
-// =============================================================
-// LAB 2 - app.js (SUDAH DIKERJAKAN) - berjalan di BROWSER
-// =============================================================
-const tbody = document.querySelector('#tabel-body');
-const form = document.querySelector('#form-mahasiswa');
-const inputCari = document.querySelector('#cari');
-const pesan = document.querySelector('#pesan');
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rekap Nilai - Pemrograman Web</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Urutan penting: data -> api -> nilai -> app.
+       defer = file dijalankan setelah HTML selesai dibaca (elemen sudah ada). -->
+  <script src="data.js" defer></script>
+  <script src="api.js" defer></script>
+  <script src="nilai.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Rekap Nilai Pemrograman Web</h1>
+    <p>Data dari <code>api.js</code> (Promise + localStorage) &middot; nilai akhir &amp; grade dihitung oleh <code>nilai.js</code></p>
+  </header>
 
-let semuaData = []; 
+  <main>
+    <section class="statistik" aria-label="Statistik kelas">
+      <div class="kartu"><span class="label">Jumlah</span><span id="stat-jumlah" class="angka">-</span></div>
+      <div class="kartu"><span class="label">Lulus</span><span id="stat-lulus" class="angka">-</span></div>
+      <div class="kartu"><span class="label">Rata-rata</span><span id="stat-rata" class="angka">-</span></div>
+      <div class="kartu"><span class="label">Tertinggi</span><span id="stat-tertinggi" class="angka kecil">-</span></div>
+      <div class="kartu lebar"><span class="label">Distribusi grade</span><span id="stat-distribusi" class="angka kecil">-</span></div>
+    </section>
 
-// =============================================================
-// LANGKAH 3a: ambil data dari API (api.js)
-// =============================================================
-async function muatData() {
-  try {
-    const daftar = await ambilMahasiswa();
-    semuaData = buatRekap(daftar);
-    tampilkan();
-  } catch (err) {
-    tampilkanPesan(`Gagal memuat data: ${err.message}`, 'error');
-  }
-}
+    <section>
+      <h2>Tambah Mahasiswa</h2>
+      <form id="form-mahasiswa" novalidate>
+        <input name="nim" placeholder="NIM (7 digit)" inputmode="numeric" maxlength="7" required>
+        <input name="nama" placeholder="Nama lengkap" required>
+        <input name="tugas" type="number" min="0" max="100" placeholder="Tugas" required>
+        <input name="uts" type="number" min="0" max="100" placeholder="UTS" required>
+        <input name="uas" type="number" min="0" max="100" placeholder="UAS" required>
+        <button type="submit">Simpan</button>
+      </form>
+      <p id="pesan" role="status"></p>
+    </section>
 
-function tampilkan() {
-  const hasilCari = cariMahasiswa(semuaData, inputCari.value);
-  renderTabel(hasilCari);
-  renderStatistik(semuaData);
-}
-
-// =============================================================
-// LANGKAH 3b: tampilkan data ke tabel
-// =============================================================
-function renderTabel(data) {
-  tbody.replaceChildren(); 
-
-  if (data.length === 0) {
-    const trKosong = document.createElement('tr');
-    const tdKosong = document.createElement('td');
-    tdKosong.colSpan = 8;
-    tdKosong.className = 'kosong';
-    tdKosong.textContent = 'Tidak ada data';
-    trKosong.appendChild(tdKosong);
-    tbody.appendChild(trKosong);
-    return;
-  }
-
-  for (const m of data) {
-    const tr = document.createElement('tr');
-    tr.classList.add(m.lulus ? 'lulus' : 'tidak-lulus');
-
-    // Kolom data
-    const nilaiTampil = [m.nim, m.nama, m.tugas, m.uts, m.uas, m.nilaiAkhir.toFixed(2), m.grade];
-    for (const val of nilaiTampil) {
-      const td = document.createElement('td');
-      td.textContent = val;
-      tr.appendChild(td);
-    }
-
-    // Kolom Aksi (Tombol Hapus) - LANGKAH 7
-    const tdAksi = document.createElement('td');
-    const btnHapus = document.createElement('button');
-    btnHapus.className = 'btn-hapus';
-    btnHapus.dataset.nim = m.nim;
-    btnHapus.textContent = 'Hapus';
-    tdAksi.appendChild(btnHapus);
-    tr.appendChild(tdAksi);
-
-    tbody.appendChild(tr);
-  }
-}
-
-// =============================================================
-// LANGKAH 4: statistik
-// =============================================================
-function renderStatistik(data) {
-  document.querySelector('#stat-jumlah').textContent = data.length;
-  
-  const jmlLulus = data.filter(m => m.lulus).length;
-  document.querySelector('#stat-lulus').textContent = `${jmlLulus}/${data.length}`;
-  
-  document.querySelector('#stat-rata').textContent = hitungRataRata(data);
-  
-  const tertinggi = cariTertinggi(data);
-  document.querySelector('#stat-tertinggi').textContent = tertinggi ? `${tertinggi.nama} (${tertinggi.nilaiAkhir.toFixed(2)})` : '-';
-  
-  const dist = hitungDistribusiGrade(data);
-  document.querySelector('#stat-distribusi').textContent = Object.entries(dist).map(([grade, jumlah]) => `${grade}: ${jumlah}`).join(' · ');
-}
-
-// Sudah jadi
-function tampilkanPesan(teks, jenis) {
-  pesan.textContent = teks;
-  pesan.className = jenis; 
-}
-
-// =============================================================
-// LANGKAH 5: pencarian
-// =============================================================
-inputCari.addEventListener('input', () => {
-  tampilkan();
-});
-
-// =============================================================
-// LANGKAH 6: tambah mahasiswa
-// =============================================================
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  const f = new FormData(form);
-  const baru = {
-    nim: f.get('nim').trim(),
-    nama: f.get('nama').trim(),
-    tugas: f.get('tugas') === '' ? NaN : Number(f.get('tugas')),
-    uts: f.get('uts') === '' ? NaN : Number(f.get('uts')),
-    uas: f.get('uas') === '' ? NaN : Number(f.get('uas')),
-  };
-
-  const errors = validasiMahasiswa(baru);
-  if (errors.length > 0) {
-    tampilkanPesan(errors.join(', '), 'error');
-    return;
-  }
-
-  try {
-    const hasil = await tambahMahasiswa(baru);
-    const [r] = buatRekap([hasil]);
-    tampilkanPesan(`${r.nama} tersimpan: nilai ${r.nilaiAkhir.toFixed(2)} (${r.grade})`, 'sukses');
-    form.reset();
-    await muatData();
-  } catch (err) {
-    tampilkanPesan(`Gagal menyimpan: ${err.message}`, 'error');
-  }
-});
-
-// =============================================================
-// LANGKAH 7 (BONUS): hapus dengan event delegation
-// =============================================================
-tbody.addEventListener('click', async (event) => {
-  const tombol = event.target.closest('.btn-hapus');
-  if (!tombol) return;
-
-  const nim = tombol.dataset.nim;
-  if (confirm(`Apakah Anda yakin ingin menghapus data dengan NIM ${nim}?`)) {
-    try {
-      const teks = await hapusMahasiswa(nim);
-      tampilkanPesan(teks, 'sukses');
-      await muatData();
-    } catch (err) {
-      tampilkanPesan(`Gagal menghapus: ${err.message}`, 'error');
-    }
-  }
-});
-
-// ---------- Mulai ----------
-muatData();
+    <section>
+      <div class="judul-tabel">
+        <h2>Daftar Nilai</h2>
+        <input id="cari" type="search" placeholder="Cari nama..." autocomplete="off">
+      </div>
+      <div class="bungkus-tabel">
+        <table>
+          <thead>
+            <tr>
+              <th>NIM</th><th>Nama</th><th>Tugas</th><th>UTS</th><th>UAS</th>
+              <th>Nilai Akhir</th><th>Grade</th><th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-body">
+            <tr><td colspan="8" class="kosong">Memuat data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
