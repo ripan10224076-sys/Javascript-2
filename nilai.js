@@ -1,51 +1,54 @@
-// =============================================================
-// nilai.js (STARTER) - LOGIKA hitung nilai, berjalan di BROWSER
-//
-// LANGKAH 2:
-//   Ganti setiap function di bawah dengan versi Anda dari LAB 1 (soal.js).
-//   Function di bawah sengaja hanya "stub" agar halaman tetap bisa berjalan.
-//
-// File ini hanya berisi LOGIKA (hitung nilai). Urusan DOM ada di app.js.
-// Uji di Console browser, mis.: tentukanGrade(84.9)  -> 'B'
-// =============================================================
-
 function hitungNilaiAkhir(tugas, uts, uas) {
-  // TODO: salin dari Lab 1
-  return 0;
+  // Asumsi bobot: Tugas 30%, UTS 30%, UAS 40%
+  return (tugas * 0.3) + (uts * 0.3) + (uas * 0.4);
 }
 
 function tentukanGrade(nilai) {
-  // TODO: salin dari Lab 1
-  return '?';
+  if (nilai >= 80) return 'A';
+  if (nilai >= 70) return 'B';
+  if (nilai >= 60) return 'C';
+  if (nilai >= 50) return 'D';
+  return 'E';
 }
 
 function buatRekap(daftar) {
-  // TODO: salin dari Lab 1 (map + spread, tambah nilaiAkhir, grade, lulus)
-  return daftar;
+  return daftar.map(m => {
+    const nilaiAkhir = hitungNilaiAkhir(m.tugas, m.uts, m.uas);
+    const grade = tentukanGrade(nilaiAkhir);
+    // Dianggap lulus jika grade A, B, atau C
+    const lulus = grade === 'A' || grade === 'B' || grade === 'C'; 
+    return { ...m, nilaiAkhir, grade, lulus };
+  });
 }
 
 function hitungRataRata(rekap) {
-  // TODO: salin dari Lab 1
-  return 0;
+  if (rekap.length === 0) return 0;
+  const total = rekap.reduce((sum, m) => sum + m.nilaiAkhir, 0);
+  return (total / rekap.length).toFixed(2);
 }
 
 function cariTertinggi(rekap) {
-  // TODO: salin dari Lab 1. Tambahkan: jika rekap kosong -> return null
-  return null;
+  if (rekap.length === 0) return null;
+  return rekap.reduce((max, m) => (m.nilaiAkhir > max.nilaiAkhir ? m : max), rekap[0]);
 }
 
 function hitungDistribusiGrade(rekap) {
-  // TODO: salin dari Lab 1
-  return { A: 0, B: 0, C: 0, D: 0, E: 0 };
+  const dist = { A: 0, B: 0, C: 0, D: 0, E: 0 };
+  rekap.forEach(m => {
+    if (dist[m.grade] !== undefined) {
+      dist[m.grade]++;
+    }
+  });
+  return dist;
 }
 
 function cariMahasiswa(rekap, kataKunci) {
-  // TODO: salin dari Lab 1
-  return rekap;
+  const keyword = kataKunci.toLowerCase().trim();
+  return rekap.filter(m => 
+    m.nama.toLowerCase().includes(keyword) || m.nim.includes(keyword)
+  );
 }
 
-// ---- Sudah jadi: validasi input mahasiswa baru (dipakai sebelum memanggil api.js) ----
-// Mengembalikan array pesan error; array kosong = valid.
 function validasiMahasiswa(input) {
   const errors = [];
   if (typeof input.nim !== 'string' || !/^\d{7}$/.test(input.nim)) {
